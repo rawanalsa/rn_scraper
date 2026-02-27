@@ -23,16 +23,14 @@ session.headers.update(HEADERS)
 prefixes = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"]  
 
 def get_db_connection():
-    database_url = os.getenv("DATABASE_URL")
-    if database_url:
-        return psycopg2.connect(database_url)
-    return psycopg2.connect(
-        host=os.getenv("DB_HOST"),
-        port=os.getenv("DB_PORT"),
-        dbname=os.getenv("DB_NAME"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD")
-    )
+    return psycopg2.connect(os.getenv("DATABASE_URL"))
+
+    #     host=os.getenv("DB_HOST"),
+    #     port=os.getenv("DB_PORT"),
+    #     dbname=os.getenv("DB_NAME"),
+    #     user=os.getenv("DB_USER"),
+    #     password=os.getenv("DB_PASSWORD")
+    # )
 
 # get a single page of results for a given prefix and page number
 def fetch_page(prefix, page_number, page_size=100):
