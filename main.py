@@ -8,7 +8,9 @@ load_dotenv()
 
 BASE_URL = "https://api.nysed.gov/rosa/V2"
 ENDPOINT = "/byProfessionAndName"
+
 API_KEY = os.getenv("API_KEY")
+DATABASE_URL = os.getenv("DATABASE_URL") # Railway Postgres gives you this
 
 HEADERS = {
     "accept": "application/json, text/javascript, */*; q=0.01",
@@ -20,10 +22,12 @@ HEADERS = {
 session = requests.Session()
 session.headers.update(HEADERS)
 
-prefixes = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"]  
+prefixes = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 def get_db_connection():
-    return psycopg2.connect(os.getenv("DATABASE_URL"))
+    if not DATABASE_URL:
+        raise ValueError("DATABASE_URL environment variable is not set")
+    return psycopg2.connect(DATABASE_URL)
 
     #     host=os.getenv("DB_HOST"),
     #     port=os.getenv("DB_PORT"),
@@ -61,16 +65,19 @@ def iterate_pages_for_prefix(prefix, page_size=100):
     page_number = 0
     while True:
         data = fetch_page(prefix, page_number, page_size=page_size)
-        if not data:
-            page_number += 1
-            continue
+        if data is None:
+            print(f"{prefix} page {page_number}: Skipping due to fetch error")
+            break
+
         yield data
         time.sleep(0.2)  # small delay to avoid hitting rate limits
+       
         total_pages = data.get("totalPages")
         if total_pages is not None:
             if page_number >= total_pages -1:
                 break 
             page_number += 1
+            continue
         else:
             items = data.get("content", []) 
             if items is not None and len(items) == 0:   #If the page has no records, stop paging. Otherwise go to the next page
@@ -180,11 +187,16 @@ def main():
     for prefix in prefixes:
         for page in iterate_pages_for_prefix(prefix):
             rows = extract_rows(page)
+
+            inserted = insert_rows(conn, rows)
+
+            prefix_inserted += inserted 
+            total_inserted += inserted
             # rows_insert = filter_existing_rows(conn, rows) # added this after collecting all the prefix data to now get the new row data to avoid going through each page of each prefix 
-            if not rows:  
-                print(f"{prefix}: No new rows on this page")
-                break 
-            total += len(rows)
+            # if not rows:  
+            #     print(f"{prefix}: No new rows on this page")
+            #     break 
+            # total += len(rows)
             print(f"{prefix}: Inserted {len(rows)} | Total Records: {total}")
     conn.close()
 
