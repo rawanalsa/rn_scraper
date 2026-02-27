@@ -188,16 +188,18 @@ def main():
         for page in iterate_pages_for_prefix(prefix):
             rows = extract_rows(page)
 
-            inserted = insert_rows(conn, rows)
+            if not rows:  
+                print(f"{prefix}: No new rows on this page")
+                break 
 
-            prefix_inserted += inserted 
-            total_inserted += inserted
-            # rows_insert = filter_existing_rows(conn, rows) # added this after collecting all the prefix data to now get the new row data to avoid going through each page of each prefix 
-            # if not rows:  
-            #     print(f"{prefix}: No new rows on this page")
-            #     break 
-            # total += len(rows)
-            print(f"{prefix}: Inserted {len(rows)} | Total Records: {total}")
+            rows_insert = filter_existing_rows(conn, rows)  # added this after collecting all the prefix data to now get the new row data to avoid going through each page of each prefix 
+            if not rows_insert:
+                print(f"{prefix}: No new rows to insert")
+                break
+
+            insert_rows(conn, rows_insert)
+            total += len(rows_insert)
+            print(f"{prefix}: Inserted {len(rows_insert)} | Total Records: {total}")
     conn.close()
 
 
