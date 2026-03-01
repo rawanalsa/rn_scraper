@@ -45,7 +45,7 @@ def get_db_connection():
     # )
 
 # get a single page of results for a given prefix and page number
-def fetch_page(prefix, page_number, page_size=100):
+def fetch_page(prefix, page_number, page_size=25):
     params = {
         "name": prefix.lower(),
         "professionCode": "022",
@@ -97,7 +97,7 @@ def fetch_page(prefix, page_number, page_size=100):
     
 
 # iterate through all pages for one prefix
-def iterate_pages_for_prefix(prefix, page_size=100):
+def iterate_pages_for_prefix(prefix, page_size=25):
     page_number = 0
     while True:
         data = fetch_page(prefix, page_number, page_size=page_size)
@@ -131,7 +131,7 @@ def iterate_pages_for_prefix(prefix, page_size=100):
         page_number += 1
 
 # iterate through all prefixes and all pages for each prefix 
-def iterate_all_prefixes(page_size=100):
+def iterate_all_prefixes(page_size=25):
     for prefix in prefixes:
         for page_data in iterate_pages_for_prefix(prefix, page_size=page_size):
             yield prefix, page_data
