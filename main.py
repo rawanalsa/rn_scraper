@@ -2,6 +2,8 @@ import requests
 import psycopg2
 import os
 import time 
+import random 
+from requests.exceptions import Timeout, ConnectionError, HTTPError, RequestException
 from dotenv import load_dotenv
 from datetime import datetime
 load_dotenv()
@@ -24,6 +26,11 @@ session.headers.update(HEADERS)
 
 prefixes = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
+TIMEOUT = (5, 30)  # (connect timeout, read timeout)
+MAX_ATTEMPTS = 10
+BACKOFF_BASE = 1.5   
+BACKOFF_MAX = 60    # max backoff seconds
+
 def get_db_connection():
     if not DATABASE_URL:
         raise ValueError("DATABASE_URL environment variable is not set")
@@ -44,19 +51,47 @@ def fetch_page(prefix, page_number, page_size=100):
         "pageNumber": page_number,
         "pageSize": page_size
     }
-    for attempt in range(5):
-        response = session.get(BASE_URL + ENDPOINT, params=params)
-        if response.status_code == 200:
-            return response.json()
-        if response.status_code in (408, 429, 500, 502, 503, 504):
-            wait = 2 * (attempt + 1)
-            print(f"{prefix} page {page_number}: Received {response.status_code}. Retrying in {wait}s")
-            time.sleep(wait)
-        else:
+    retry_statuses = (408, 429, 500, 502, 503, 504)
+
+    for attempt in range(1, MAX_ATTEMPTS + 1):
+        try: 
+            response = session.get(
+                BASE_URL + ENDPOINT, 
+                params=params, 
+                timeout=TIMEOUT
+            )
+            if response.status_code == 200:
+                return response.json()
+            
+            # Retryable HTTP status
+            if response.status_code in retry_statuses:
+                retry_after = response.headers.get("Retry-After")
+                if retry_after and retry_after.isdigit():
+                    wait = min(int(retry_after), BACKOFF_MAX)
+                else:
+                    wait = min(BACKOFF_BASE * (2 ** (attempt - 1)), BACKOFF_MAX)
+                    wait = wait + random.uniform(0, 1)  # add jitter
+
+                print(f"{prefix} page {page_number}: Received {response.status_code}. Retrying in {wait}s")
+                time.sleep(wait)
+                continue
+             # Non-retryable HTTP status
             print(f"ERROR: {response.status_code} - {response.text}")
             return None
         
-    print(f"{prefix} page {page_number}: failed after retries")
+        except (Timeout, ConnectionError) as e:
+            wait = min(BACKOFF_BASE * (2 ** (attempt - 1)), BACKOFF_MAX)
+            wait = wait + random.uniform(0, 1.0)
+            print(f"{prefix} page {page_number}: Network ERROR {type(e).__name__}. Waiting {wait}s")
+            time.sleep(wait)
+            continue
+
+        except RequestException as e:
+            # unexpected requests error (log and skip)
+            print(f"{prefix} page {page_number}: RequestException: {e}")
+            return None
+        
+    print(f"{prefix} page {page_number}: failed after {MAX_ATTEMPTS} attempts.")
     return None 
     
 
@@ -66,11 +101,21 @@ def iterate_pages_for_prefix(prefix, page_size=100):
     while True:
         data = fetch_page(prefix, page_number, page_size=page_size)
         if data is None:
-            print(f"{prefix} page {page_number}: Skipping due to fetch error")
-            break
+            max_page_retries = 3
+            for retry_i in range(1, max_page_retries + 1):
+                wait = min(10 * retry_i, 30) + random.uniform(0, 1.0)  # backoff + jitter
+                print(f"{prefix} page {page_number}: Retry {retry_i}/{max_page_retries}. Waiting {wait:.1f}s")
+                time.sleep(wait)
 
+                data = fetch_page(prefix, page_number, page_size=page_size)
+                if data is not None: 
+                    break 
+            if data is None:
+                print(f"{prefix} page {page_number}: Failed to fetch after {max_page_retries} retries. Skipping page.")
+                break
+            
         yield data
-        time.sleep(0.2)  # small delay to avoid hitting rate limits
+        time.sleep(0.35)  # small delay to avoid hitting rate limits
        
         total_pages = data.get("totalPages")
         if total_pages is not None:
@@ -78,11 +123,11 @@ def iterate_pages_for_prefix(prefix, page_size=100):
                 break 
             page_number += 1
             continue
-        else:
-            items = data.get("content", []) 
-            if items is not None and len(items) == 0:   #If the page has no records, stop paging. Otherwise go to the next page
-                break 
-            page_number += 1
+    
+        items = data.get("content", []) 
+        if not items:   #If the page has no records, stop. Otherwise go to the next page
+            break 
+        page_number += 1
 
 # iterate through all prefixes and all pages for each prefix 
 def iterate_all_prefixes(page_size=100):
