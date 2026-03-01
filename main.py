@@ -24,7 +24,8 @@ HEADERS = {
 session = requests.Session()
 session.headers.update(HEADERS)
 
-prefixes = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+# prefixes = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+prefixes = list("STUVWXYZ")
 
 TIMEOUT = (5, 30)  # (connect timeout, read timeout)
 MAX_ATTEMPTS = 10
