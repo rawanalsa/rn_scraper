@@ -71,7 +71,7 @@ def fetch_page(prefix, page_number, page_size=25):
                     wait = min(int(retry_after), BACKOFF_MAX)
                 else:
                     wait = min(BACKOFF_BASE * (2 ** (attempt - 1)), BACKOFF_MAX)
-                    wait = wait + random.uniform(0, 1)  # add jitter
+                    wait = wait + random.uniform(0, wait / 2)  # add jitter
 
                 print(f"{prefix} page {page_number}: Received {response.status_code}. Retrying in {wait}s")
                 time.sleep(wait)
@@ -95,35 +95,37 @@ def fetch_page(prefix, page_number, page_size=25):
     print(f"{prefix} page {page_number}: failed after {MAX_ATTEMPTS} attempts.")
     return None 
     
+def cooldown_sleep(min_seconds=180, max_seconds=600):
+    wait = random.uniform(min_seconds, max_seconds)
+    print(f"Cooldown: Waiting {wait}s before next request")
+    time.sleep(wait)
 
 # iterate through all pages for one prefix
 def iterate_pages_for_prefix(prefix, page_size=25):
     page_number = 0
+    consecutive_failures = 0
     while True:
         data = fetch_page(prefix, page_number, page_size=page_size)
         if data is None:
-            max_page_retries = 3
-            for retry_i in range(1, max_page_retries + 1):
-                wait = min(10 * retry_i, 30) + random.uniform(0, 1.0)  # backoff + jitter
-                print(f"{prefix} page {page_number}: Retry {retry_i}/{max_page_retries}. Waiting {wait:.1f}s")
-                time.sleep(wait)
-
-                data = fetch_page(prefix, page_number, page_size=page_size)
-                if data is not None: 
-                    break 
-            if data is None:
-                print(f"{prefix} page {page_number}: Failed to fetch after {max_page_retries} retries. Skipping page.")
-                break
+            consecutive_failures += 1
+            print(f"{prefix} page {page_number}: Fetch failed {consecutive_failures} times")
             
+            # circuit breaker, cool down then try again
+            if consecutive_failures >= 3:
+                cooldown_sleep(180, 600)
+                consecutive_failures = 0
+
+            time.sleep(2 + random.uniform(0, 1))  # small delay before retrying
+            continue
+
+        consecutive_failures = 0  # reset on success  
         yield data
-        time.sleep(0.35)  # small delay to avoid hitting rate limits
+
+        time.sleep(0.6) #slow down
        
         total_pages = data.get("totalPages")
-        if total_pages is not None:
-            if page_number >= total_pages -1:
-                break 
-            page_number += 1
-            continue
+        if total_pages is not None and page_number >= total_pages - 1:
+            break 
     
         items = data.get("content", []) 
         if not items:   #If the page has no records, stop. Otherwise go to the next page
