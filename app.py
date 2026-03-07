@@ -1,4 +1,5 @@
 import os
+import re
 import psycopg2
 import psycopg2.extras
 from flask import Flask, jsonify, request, send_from_directory
@@ -60,6 +61,7 @@ def licenses():
     license_number = request.args.get("license_number", "").strip()
     date_from = request.args.get("date_from", "").strip()
     date_to = request.args.get("date_to", "").strip()
+    match_type = request.args.get("match_type", "contains").strip().lower()
     sort_by = request.args.get("sort_by", "name")
     sort_dir = "DESC" if request.args.get("sort_dir", "asc").lower() == "desc" else "ASC"
     export = request.args.get("export", "").lower() == "true"
@@ -76,17 +78,31 @@ def licenses():
     if sort_by not in VALID_SORT_COLS:
         sort_by = "name"
 
+    if match_type not in {"contains", "starts", "exact", "word"}:
+        match_type = "contains"
+
     conditions = []
     params = []
-    if name:
-        conditions.append("name ILIKE %s")
-        params.append(f"%{name}%")
-    if address:
-        conditions.append("address ILIKE %s")
-        params.append(f"%{address}%")
-    if license_number:
-        conditions.append("license_number ILIKE %s")
-        params.append(f"%{license_number}%")
+
+    def add_text_filter(column, value):
+        if not value:
+            return
+        if match_type == "contains":
+            conditions.append(f"{column} ILIKE %s")
+            params.append(f"%{value}%")
+        elif match_type == "starts":
+            conditions.append(f"{column} ILIKE %s")
+            params.append(f"{value}%")
+        elif match_type == "exact":
+            conditions.append(f"{column} ILIKE %s")
+            params.append(value)
+        else:
+            conditions.append(f"{column} ~* %s")
+            params.append(rf"\m{re.escape(value)}\M")
+
+    add_text_filter("name", name)
+    add_text_filter("address", address)
+    add_text_filter("license_number", license_number)
     if date_from:
         conditions.append("date_of_licensure >= %s")
         params.append(date_from)
@@ -159,4 +175,4 @@ def license_detail(license_number):
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    app.run(debug=False, port=5000)

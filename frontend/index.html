@@ -391,6 +391,15 @@
     <h2>Search &amp; Filter</h2>
     <div class="search-grid">
       <div class="field">
+        <label>Match Type</label>
+        <select id="f-match">
+          <option value="contains" selected>Contains</option>
+          <option value="starts">Starts With</option>
+          <option value="exact">Exact</option>
+          <option value="word">Whole Word</option>
+        </select>
+      </div>
+      <div class="field">
         <label>Name</label>
         <input id="f-name" type="text" placeholder="e.g. Smith" />
       </div>
@@ -517,6 +526,7 @@
     ["f-name","f-license","f-address","f-date-from","f-date-to"].forEach(id => {
       document.getElementById(id).value = "";
     });
+    document.getElementById("f-match").value = "contains";
     search();
   }
 
@@ -533,12 +543,14 @@
 
   function buildParams(page, perPage, forExport) {
     const p = new URLSearchParams();
+    const match    = document.getElementById("f-match").value;
     const name     = document.getElementById("f-name").value.trim();
     const license  = document.getElementById("f-license").value.trim();
     const address  = document.getElementById("f-address").value.trim();
     const dateFrom = document.getElementById("f-date-from").value;
     const dateTo   = document.getElementById("f-date-to").value;
 
+    if (match)    p.set("match_type", match);
     if (name)     p.set("name", name);
     if (license)  p.set("license_number", license);
     if (address)  p.set("address", address);
