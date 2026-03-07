@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NYSED RN License Explorer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy: #1a3a5c;
+      --navy-dark: #122840;
+      --accent: #2e7bc4;
+      --accent-light: #e8f2fb;
+      --green: #1e7e4b;
+      --green-bg: #eaf6f0;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #d1d5db;
+      --bg: #f5f7fa;
+      --white: #ffffff;
+      --row-hover: #f0f6ff;
+      --shadow: 0 1px 4px rgba(0,0,0,0.08);
+      --radius: 8px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, var(--navy-dark) 0%, var(--navy) 100%);
+      color: var(--white);
+      padding: 20px 32px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    header .logo {
+      width: 44px; height: 44px;
+      background: var(--accent);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; font-weight: 800; letter-spacing: -1px;
+      flex-shrink: 0;
+    }
+    header h1 { font-size: 1.4rem; font-weight: 700; }
+    header p  { font-size: 0.82rem; opacity: 0.75; margin-top: 2px; }
+
+    /* ── Layout ── */
+    .container { max-width: 1200px; margin: 0 auto; padding: 28px 24px; }
+
+    /* ── Stats ── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      box-shadow: var(--shadow);
+    }
+    .stat-card .label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .stat-card .value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--navy);
+    }
+    .stat-card .sub {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* ── Search panel ── */
+    .search-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      box-shadow: var(--shadow);
+      margin-bottom: 20px;
+    }
+    .search-card h2 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--navy);
+      margin-bottom: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .search-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+    }
+    .field label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .field input {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.88rem;
+      color: var(--text);
+      background: var(--bg);
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .field input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(46,123,196,0.15);
+      background: var(--white);
+    }
+    .search-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .btn {
+      padding: 8px 18px;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.87rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: var(--accent); color: var(--white); }
+    .btn-primary:hover { background: #2368a8; }
+    .btn-ghost {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { background: var(--bg); color: var(--text); }
+    .btn-green { background: var(--green); color: var(--white); }
+    .btn-green:hover { background: #165c37; }
+
+    /* ── Results bar ── */
+    .results-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .results-bar .count {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .results-bar .count strong { color: var(--text); }
+    .per-page-select {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 0.82rem; color: var(--muted);
+    }
+    .per-page-select select {
+      padding: 4px 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.82rem;
+      background: var(--white);
+    }
+
+    /* ── Table ── */
+    .table-wrap {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.87rem;
+    }
+    thead { background: var(--navy); color: var(--white); }
+    thead th {
+      padding: 12px 14px;
+      text-align: left;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      white-space: nowrap;
+      user-select: none;
+    }
+    thead th.sortable { cursor: pointer; }
+    thead th.sortable:hover { background: rgba(255,255,255,0.12); }
+    thead th .sort-icon { margin-left: 4px; opacity: 0.6; font-size: 0.7rem; }
+    thead th.active-sort .sort-icon { opacity: 1; color: #7ec8f5; }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.1s;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--row-hover); }
+    tbody td { padding: 11px 14px; vertical-align: top; }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+    .license-num {
+      font-family: monospace;
+      font-size: 0.85rem;
+      color: var(--navy);
+      font-weight: 600;
+    }
+
+    /* Empty / Loading states */
+    .state-row td {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--muted);
+    }
+    .spinner {
+      display: inline-block;
+      width: 24px; height: 24px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin-bottom: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Pagination ── */
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+    .pg-btn {
+      min-width: 34px; height: 34px;
+      padding: 0 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--white);
+      color: var(--text);
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .pg-btn:hover:not(:disabled) { background: var(--accent-light); border-color: var(--accent); }
+    .pg-btn.active { background: var(--accent); color: var(--white); border-color: var(--accent); font-weight: 700; }
+    .pg-btn:disabled { opacity: 0.35; cursor: default; }
+    .pg-ellipsis { color: var(--muted); padding: 0 4px; font-size: 0.9rem; }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--white);
+      border-radius: 12px;
+      padding: 28px 32px;
+      max-width: 460px;
+      width: 90%;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      position: relative;
+    }
+    .modal h2 {
+      font-size: 1.1rem;
+      color: var(--navy);
+      margin-bottom: 18px;
+      padding-right: 24px;
+    }
+    .modal-close {
+      position: absolute; top: 16px; right: 16px;
+      background: none; border: none;
+      font-size: 1.3rem; cursor: pointer; color: var(--muted);
+    }
+    .modal-close:hover { color: var(--text); }
+    .detail-row {
+      display: flex; gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-label {
+      width: 130px;
+      flex-shrink: 0;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding-top: 1px;
+    }
+    .detail-value { font-size: 0.9rem; color: var(--text); }
+
+    /* ── Notification toast ── */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--green);
+      color: var(--white);
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 0.87rem;
+      font-weight: 600;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+      opacity: 0;
+      transition: opacity 0.25s;
+      z-index: 200;
+    }
+    .toast.show { opacity: 1; }
+
+    @media (max-width: 640px) {
+      .stats-row { grid-template-columns: 1fr 1fr; }
+      .stats-row .stat-card:last-child { grid-column: span 2; }
+      header { padding: 14px 16px; }
+      .container { padding: 16px 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">RN</div>
+  <div>
+    <h1>NYSED RN License Explorer</h1>
+    <p>New York State Registered Nurse License Database &mdash; Profession Code 022</p>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="label">Total Licenses</div>
+      <div class="value" id="stat-total">--</div>
+      <div class="sub">records in database</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Earliest Licensed</div>
+      <div class="value" id="stat-earliest" style="font-size:1.1rem;padding-top:8px">--</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Most Recent</div>
+      <div class="value" id="stat-latest" style="font-size:1.1rem;padding-top:8px">--</div>
+    </div>
+  </div>
+
+  <!-- Search -->
+  <div class="search-card">
+    <h2>Search &amp; Filter</h2>
+    <div class="search-grid">
+      <div class="field">
+        <label>Name</label>
+        <input id="f-name" type="text" placeholder="e.g. Smith" />
+      </div>
+      <div class="field">
+        <label>License #</label>
+        <input id="f-license" type="text" placeholder="e.g. 123456" />
+      </div>
+      <div class="field">
+        <label>Address / State</label>
+        <input id="f-address" type="text" placeholder="e.g. Brooklyn, NY" />
+      </div>
+      <div class="field">
+        <label>Licensed After</label>
+        <input id="f-date-from" type="date" />
+      </div>
+      <div class="field">
+        <label>Licensed Before</label>
+        <input id="f-date-to" type="date" />
+      </div>
+    </div>
+    <div class="search-actions">
+      <button class="btn btn-primary" onclick="search()">Search</button>
+      <button class="btn btn-ghost" onclick="clearFilters()">Clear</button>
+      <button class="btn btn-green" onclick="exportCSV()" style="margin-left:auto">Export CSV</button>
+    </div>
+  </div>
+
+  <!-- Results bar -->
+  <div class="results-bar">
+    <div class="count" id="results-count">Loading&hellip;</div>
+    <div class="per-page-select">
+      Rows per page:
+      <select id="per-page" onchange="search()">
+        <option value="10">10</option>
+        <option value="25" selected>25</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th class="sortable" data-col="license_number" onclick="setSort('license_number')">
+            License # <span class="sort-icon">&#8597;</span>
+          </th>
+          <th class="sortable" data-col="name" onclick="setSort('name')">
+            Name <span class="sort-icon">&#8597;</span>
+          </th>
+          <th class="sortable" data-col="profession" onclick="setSort('profession')">
+            Profession <span class="sort-icon">&#8597;</span>
+          </th>
+          <th class="sortable" data-col="address" onclick="setSort('address')">
+            Address <span class="sort-icon">&#8597;</span>
+          </th>
+          <th class="sortable" data-col="date_of_licensure" onclick="setSort('date_of_licensure')">
+            Date Licensed <span class="sort-icon">&#8597;</span>
+          </th>
+        </tr>
+      </thead>
+      <tbody id="table-body">
+        <tr class="state-row"><td colspan="5">
+          <div class="spinner"></div><br>Loading&hellip;
+        </td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination" id="pagination"></div>
+
+</div>
+
+<!-- Detail Modal -->
+<div class="modal-overlay" id="modal" onclick="closeModal(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">&times;</button>
+    <h2 id="modal-title">License Detail</h2>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  let currentPage = 1;
+  let currentSort = "name";
+  let currentDir  = "asc";
+  let totalPages  = 1;
+
+  // ── Init ──────────────────────────────────────────────
+  window.addEventListener("DOMContentLoaded", () => {
+    loadStats();
+    fetchLicenses();
+
+    // Allow pressing Enter in any filter input to trigger search
+    document.querySelectorAll(".field input").forEach(el => {
+      el.addEventListener("keydown", e => { if (e.key === "Enter") search(); });
+    });
+  });
+
+  // ── Stats ─────────────────────────────────────────────
+  async function loadStats() {
+    try {
+      const res = await fetch("/api/stats");
+      const d = await res.json();
+      document.getElementById("stat-total").textContent = d.total.toLocaleString();
+      document.getElementById("stat-earliest").textContent = formatDate(d.earliest) || "N/A";
+      document.getElementById("stat-latest").textContent   = formatDate(d.latest)   || "N/A";
+    } catch { /* silently ignore */ }
+  }
+
+  // ── Search / filter ───────────────────────────────────
+  function search() {
+    currentPage = 1;
+    fetchLicenses();
+  }
+
+  function clearFilters() {
+    ["f-name","f-license","f-address","f-date-from","f-date-to"].forEach(id => {
+      document.getElementById(id).value = "";
+    });
+    search();
+  }
+
+  function setSort(col) {
+    if (currentSort === col) {
+      currentDir = currentDir === "asc" ? "desc" : "asc";
+    } else {
+      currentSort = col;
+      currentDir = "asc";
+    }
+    currentPage = 1;
+    fetchLicenses();
+  }
+
+  function buildParams(page, perPage, forExport) {
+    const p = new URLSearchParams();
+    const name     = document.getElementById("f-name").value.trim();
+    const license  = document.getElementById("f-license").value.trim();
+    const address  = document.getElementById("f-address").value.trim();
+    const dateFrom = document.getElementById("f-date-from").value;
+    const dateTo   = document.getElementById("f-date-to").value;
+
+    if (name)     p.set("name", name);
+    if (license)  p.set("license_number", license);
+    if (address)  p.set("address", address);
+    if (dateFrom) p.set("date_from", dateFrom);
+    if (dateTo)   p.set("date_to", dateTo);
+    p.set("sort_by",  currentSort);
+    p.set("sort_dir", currentDir);
+    p.set("page",     page);
+    p.set("per_page", perPage);
+    if (forExport) p.set("export", "true");
+    return p;
+  }
+
+  // ── Fetch & render ────────────────────────────────────
+  async function fetchLicenses() {
+    const perPage = document.getElementById("per-page").value;
+    const params  = buildParams(currentPage, perPage, false);
+
+    setTableLoading();
+    updateSortHeaders();
+
+    try {
+      const res  = await fetch("/api/licenses?" + params);
+      const data = await res.json();
+      totalPages = data.total_pages || 1;
+      renderTable(data.results);
+      renderCount(data.total, data.page, data.per_page);
+      renderPagination(data.page, totalPages);
+    } catch (err) {
+      showTableError("Failed to load data. Is the Flask server running?");
+    }
+  }
+
+  function setTableLoading() {
+    document.getElementById("table-body").innerHTML =
+      `<tr class="state-row"><td colspan="5"><div class="spinner"></div><br>Loading&hellip;</td></tr>`;
+    document.getElementById("results-count").textContent = "Loading\u2026";
+    document.getElementById("pagination").innerHTML = "";
+  }
+
+  function showTableError(msg) {
+    document.getElementById("table-body").innerHTML =
+      `<tr class="state-row"><td colspan="5" style="color:#c0392b">${msg}</td></tr>`;
+    document.getElementById("results-count").textContent = "";
+  }
+
+  function renderTable(rows) {
+    const tbody = document.getElementById("table-body");
+    if (!rows || rows.length === 0) {
+      tbody.innerHTML = `<tr class="state-row"><td colspan="5">No records found.</td></tr>`;
+      return;
+    }
+    tbody.innerHTML = rows.map(r => `
+      <tr style="cursor:pointer" onclick='openModal(${JSON.stringify(r)})'>
+        <td><span class="license-num">${esc(r.license_number)}</span></td>
+        <td>${esc(r.name || "—")}</td>
+        <td>${r.profession ? `<span class="badge">${esc(r.profession)}</span>` : "—"}</td>
+        <td>${esc(r.address || "—")}</td>
+        <td>${formatDate(r.date_of_licensure) || "—"}</td>
+      </tr>
+    `).join("");
+  }
+
+  function renderCount(total, page, perPage) {
+    const start = (page - 1) * perPage + 1;
+    const end   = Math.min(page * perPage, total);
+    const el = document.getElementById("results-count");
+    if (total === 0) {
+      el.innerHTML = "No results found";
+    } else {
+      el.innerHTML = `Showing <strong>${start}–${end}</strong> of <strong>${total.toLocaleString()}</strong> licenses`;
+    }
+  }
+
+  function renderPagination(page, pages) {
+    const container = document.getElementById("pagination");
+    if (pages <= 1) { container.innerHTML = ""; return; }
+
+    const nums = getPageNums(page, pages);
+    let html = `<button class="pg-btn" onclick="goPage(${page-1})" ${page<=1?"disabled":""}>&#8249;</button>`;
+
+    for (const n of nums) {
+      if (n === "…") {
+        html += `<span class="pg-ellipsis">…</span>`;
+      } else {
+        html += `<button class="pg-btn${n===page?" active":""}" onclick="goPage(${n})">${n}</button>`;
+      }
+    }
+
+    html += `<button class="pg-btn" onclick="goPage(${page+1})" ${page>=pages?"disabled":""}>&#8250;</button>`;
+    container.innerHTML = html;
+  }
+
+  function getPageNums(page, pages) {
+    if (pages <= 7) return Array.from({length: pages}, (_, i) => i + 1);
+    const nums = new Set([1, pages, page, page-1, page+1].filter(n => n >= 1 && n <= pages));
+    const sorted = [...nums].sort((a,b)=>a-b);
+    const result = [];
+    for (let i = 0; i < sorted.length; i++) {
+      if (i > 0 && sorted[i] - sorted[i-1] > 1) result.push("…");
+      result.push(sorted[i]);
+    }
+    return result;
+  }
+
+  function goPage(n) {
+    if (n < 1 || n > totalPages) return;
+    currentPage = n;
+    fetchLicenses();
+    window.scrollTo({top: 0, behavior: "smooth"});
+  }
+
+  // ── Sort header UI ────────────────────────────────────
+  function updateSortHeaders() {
+    document.querySelectorAll("thead th.sortable").forEach(th => {
+      const col = th.dataset.col;
+      th.classList.toggle("active-sort", col === currentSort);
+      const icon = th.querySelector(".sort-icon");
+      if (col === currentSort) {
+        icon.textContent = currentDir === "asc" ? "▲" : "▼";
+      } else {
+        icon.innerHTML = "&#8597;";
+      }
+    });
+  }
+
+  // ── Export CSV ────────────────────────────────────────
+  async function exportCSV() {
+    const perPage = document.getElementById("per-page").value;
+    const params  = buildParams(1, perPage, true);
+
+    showToast("Preparing CSV export…");
+
+    try {
+      const res  = await fetch("/api/licenses?" + params);
+      const data = await res.json();
+      const rows = data.results;
+
+      if (!rows || rows.length === 0) {
+        showToast("No data to export.", 3000, "#c0392b");
+        return;
+      }
+
+      const cols = ["license_number","name","profession","address","date_of_licensure"];
+      const header = cols.join(",");
+      const lines  = rows.map(r =>
+        cols.map(c => `"${(r[c] || "").toString().replace(/"/g, '""')}"`).join(",")
+      );
+      const csv  = [header, ...lines].join("\n");
+      const blob = new Blob([csv], {type: "text/csv"});
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href     = url;
+      a.download = `rn_licenses_export_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast(`Exported ${rows.length.toLocaleString()} records.`);
+    } catch {
+      showToast("Export failed.", 3000, "#c0392b");
+    }
+  }
+
+  // ── Modal ─────────────────────────────────────────────
+  function openModal(r) {
+    document.getElementById("modal-title").textContent = r.name || "License Detail";
+    document.getElementById("modal-body").innerHTML = `
+      <div class="detail-row">
+        <div class="detail-label">License #</div>
+        <div class="detail-value"><span class="license-num">${esc(r.license_number)}</span></div>
+      </div>
+      <div class="detail-row">
+        <div class="detail-label">Name</div>
+        <div class="detail-value">${esc(r.name || "—")}</div>
+      </div>
+      <div class="detail-row">
+        <div class="detail-label">Profession</div>
+        <div class="detail-value">${r.profession ? `<span class="badge">${esc(r.profession)}</span>` : "—"}</div>
+      </div>
+      <div class="detail-row">
+        <div class="detail-label">Address</div>
+        <div class="detail-value">${esc(r.address || "—")}</div>
+      </div>
+      <div class="detail-row">
+        <div class="detail-label">Date Licensed</div>
+        <div class="detail-value">${formatDate(r.date_of_licensure) || "—"}</div>
+      </div>
+    `;
+    document.getElementById("modal").classList.add("open");
+  }
+
+  function closeModal(e) {
+    if (!e || e.target === document.getElementById("modal") || e.type === "click" && !e.target.closest(".modal")) {
+      document.getElementById("modal").classList.remove("open");
+    }
+  }
+
+  // ── Toast ─────────────────────────────────────────────
+  let toastTimer;
+  function showToast(msg, duration = 3000, bg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    if (bg) t.style.background = bg; else t.style.background = "";
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove("show"), duration);
+  }
+
+  // ── Helpers ───────────────────────────────────────────
+  function esc(str) {
+    return String(str ?? "")
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+
+  function formatDate(d) {
+    if (!d) return null;
+    const [y, m, day] = d.split("-");
+    if (!y || !m || !day) return d;
+    return new Date(+y, +m-1, +day).toLocaleDateString("en-US", {
+      month: "short", day: "numeric", year: "numeric"
+    });
+  }
+</script>
+</body>
+</html>
