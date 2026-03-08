@@ -32,6 +32,13 @@ DATABASE_URL=postgresql://user:password@host:port/dbname
 python main.py
 ```
 
+## Auth Setup
+The app uses a `users` table for login/registration. It is created on startup.
+
+**About `create_user.py`**
+- If it contains hardcoded credentials, do **not** keep it in the repo.
+- Delete it after use, or add it to `.gitignore`.
+
 ## Push to GitHub
 ```bash
 # First-time setup (run once)

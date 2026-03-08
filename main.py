@@ -32,16 +32,16 @@ BACKOFF_BASE = 1.5
 BACKOFF_MAX = 60    # max backoff seconds
 
 def get_db_connection():
-    if not DATABASE_URL:
-        raise ValueError("DATABASE_URL environment variable is not set")
-    return psycopg2.connect(DATABASE_URL)
-
-    #     host=os.getenv("DB_HOST"),
-    #     port=os.getenv("DB_PORT"),
-    #     dbname=os.getenv("DB_NAME"),
-    #     user=os.getenv("DB_USER"),
-    #     password=os.getenv("DB_PASSWORD")
-    # )
+    if DATABASE_URL:
+        return psycopg2.connect(DATABASE_URL)
+    
+    return psycopg2.connect(
+        host=os.getenv("DB_HOST"),
+        port=os.getenv("DB_PORT"),
+        dbname=os.getenv("DB_NAME"),
+        user=os.getenv("DB_USER"),
+        password=os.getenv("DB_PASSWORD"),
+    )
 
 # get a single page of results for a given prefix and page number
 def fetch_page(prefix, page_number, page_size=25):

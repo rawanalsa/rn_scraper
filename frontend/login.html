@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NurseVerify — Sign In</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Inter", sans-serif;
+      background: #f1f5f9;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-font-smoothing: antialiased;
+    }
+    .card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 40px 36px;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+    }
+    .logo { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
+    .logo-icon {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .logo-icon svg { width: 18px; height: 18px; fill: white; }
+    .logo-text { font-size: 1.1rem; font-weight: 800; color: #0f172a; }
+    .logo-text span { color: #2563eb; }
+    h1 { font-size: 1.3rem; font-weight: 700; color: #0f172a; margin-bottom: 6px; }
+    .subtitle { font-size: 0.83rem; color: #64748b; margin-bottom: 28px; }
+    label { display: block; font-size: 0.75rem; font-weight: 600; color: #64748b; margin-bottom: 5px; }
+    input {
+      width: 100%; padding: 10px 12px;
+      border: 1px solid #e2e8f0; border-radius: 7px;
+      font-size: 0.9rem; font-family: inherit;
+      color: #0f172a; background: #f8fafc;
+      margin-bottom: 16px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.14); background: #fff; }
+    .btn-submit {
+      width: 100%; padding: 11px;
+      background: #2563eb; color: #fff;
+      border: none; border-radius: 7px;
+      font-size: 0.9rem; font-weight: 600; font-family: inherit;
+      cursor: pointer; margin-top: 4px;
+      transition: background 0.14s;
+    }
+    .btn-submit:hover { background: #1d4ed8; }
+    .btn-submit:disabled { opacity: 0.6; cursor: default; }
+    .error {
+      background: #fef2f2; border: 1px solid #fecaca;
+      color: #dc2626; border-radius: 7px;
+      padding: 10px 12px; font-size: 0.83rem;
+      margin-bottom: 16px; display: none;
+    }
+    .success {
+      background: #f0fdf4; border: 1px solid #bbf7d0;
+      color: #16a34a; border-radius: 7px;
+      padding: 10px 12px; font-size: 0.83rem;
+      margin-bottom: 16px; display: none;
+    }
+    .toggle-text {
+      text-align: center; font-size: 0.82rem;
+      color: #64748b; margin-top: 16px;
+    }
+    .toggle-text a { color: #2563eb; text-decoration: none; font-weight: 600; }
+    .toggle-text a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 2L3 7v5c0 5.5 3.8 10.7 9 12 5.2-1.3 9-6.5 9-12V7L12 2z"/></svg>
+      </div>
+      <div class="logo-text">Nurse<span>Verify</span></div>
+    </div>
+    <h1 id="form-title">Sign in</h1>
+    <p class="subtitle" id="form-subtitle">Enter your credentials to access the license database.</p>
+    <div class="error" id="err"></div>
+    <div class="success" id="succ"></div>
+    <label>Email</label>
+    <input id="email" type="email" placeholder="you@example.com" autocomplete="email" />
+    <label>Password</label>
+    <input id="password" type="password" placeholder="••••••••" autocomplete="current-password" />
+    <button class="btn-submit" id="btn">Sign in</button>
+    <p class="toggle-text">Don't have an account? <a href="#" id="toggle-link">Sign up</a></p>
+  </div>
+  <script>
+    let mode = "login"; // "login" | "register"
+
+    document.getElementById("toggle-link").addEventListener("click", e => {
+      e.preventDefault();
+      mode = mode === "login" ? "register" : "login";
+      const isLogin = mode === "login";
+      document.getElementById("form-title").textContent      = isLogin ? "Sign in" : "Create account";
+      document.getElementById("form-subtitle").textContent   = isLogin ? "Enter your credentials to access the license database." : "Sign up for access to NurseVerify.";
+      document.getElementById("btn").textContent             = isLogin ? "Sign in" : "Sign up";
+      document.getElementById("toggle-link").textContent     = isLogin ? "Sign up" : "Sign in";
+      document.querySelector(".toggle-text").firstChild.textContent = isLogin ? "Don't have an account? " : "Already have an account? ";
+      document.getElementById("err").style.display  = "none";
+      document.getElementById("succ").style.display = "none";
+    });
+
+    document.getElementById("btn").addEventListener("click", doSubmit);
+    document.addEventListener("keydown", e => { if (e.key === "Enter") doSubmit(); });
+
+    async function doSubmit() {
+      const btn      = document.getElementById("btn");
+      const err      = document.getElementById("err");
+      const succ     = document.getElementById("succ");
+      const email    = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+      err.style.display = "none";
+      succ.style.display = "none";
+      if (!email || !password) { err.textContent = "Please fill in both fields."; err.style.display = "block"; return; }
+      btn.disabled = true;
+      btn.textContent = mode === "login" ? "Signing in…" : "Creating account…";
+      try {
+        const endpoint = mode === "login" ? "/api/login" : "/api/register";
+        const res  = await fetch(endpoint, {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({email, password})
+        });
+        const data = await res.json();
+        if (res.ok) {
+          if (mode === "login") {
+            window.location.href = "/";
+          } else {
+            succ.textContent = "Account created! You can now sign in.";
+            succ.style.display = "block";
+            // switch back to login mode
+            document.getElementById("toggle-link").click();
+          }
+        } else {
+          err.textContent = data.error || "Something went wrong.";
+          err.style.display = "block";
+        }
+      } catch {
+        err.textContent = "Network error. Try again.";
+        err.style.display = "block";
+      }
+      btn.disabled = false;
+      btn.textContent = mode === "login" ? "Sign in" : "Sign up";
+    }
+  </script>
+</body>
+</html>

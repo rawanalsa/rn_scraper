@@ -7,10 +7,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required
+from werkzeug.security import check_password_hash, generate_password_hash
+
 app = Flask(__name__, static_folder="frontend", static_url_path="")
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+app.secret_key = os.getenv("SECRET_KEY", "dev-secret-change-me")
 
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 def get_db():
     if DATABASE_URL:
@@ -24,25 +28,63 @@ def get_db():
         cursor_factory=psycopg2.extras.RealDictCursor,
     )
 
+def init_db():
+    conn = get_db()
+    curr = conn.cursor()
+    curr.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
+            email TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT NOW()
+        );
+    """)
+    conn.commit()
+    curr.close()
+    conn.close()
+
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = "login_page"
+
+class User(UserMixin):  # tracks who is logged in during a session
+    def __init__(self, id, email):
+        self.id = id
+        self.email = email
+
+@login_manager.user_loader
+def load_user(user_id):
+    conn = get_db()
+    curr = conn.cursor()
+    curr.execute("SELECT id, email FROM users WHERE id = %s", (user_id,))
+    row = curr.fetchone()
+    curr.close()
+    conn.close()
+    if row:
+        return User(row["id"], row["email"])
+    return None
+
 
 @app.route("/")
+@login_required
 def index():
     return send_from_directory("frontend", "index.html")
 
 
 @app.route("/api/stats")
+@login_required
 def stats():
     conn = get_db()
-    cur = conn.cursor()
-    cur.execute("""
+    curr = conn.cursor()
+    curr.execute("""
         SELECT
             COUNT(*) AS total,
             MIN(date_of_licensure) AS earliest,
             MAX(date_of_licensure) AS latest
         FROM rn_licenses
     """)
-    row = cur.fetchone()
-    cur.close()
+    row = curr.fetchone()
+    curr.close()
     conn.close()
     return jsonify({
         "total": row["total"],
@@ -55,6 +97,7 @@ VALID_SORT_COLS = {"name", "license_number", "address", "date_of_licensure", "pr
 
 
 @app.route("/api/licenses")
+@login_required
 def licenses():
     name = request.args.get("name", "").strip()
     address = request.args.get("address", "").strip()
@@ -113,27 +156,27 @@ def licenses():
     where = "WHERE " + " AND ".join(conditions) if conditions else ""
 
     conn = get_db()
-    cur = conn.cursor()
+    curr = conn.cursor()
 
-    cur.execute(f"SELECT COUNT(*) AS total FROM rn_licenses {where}", params)
-    total = cur.fetchone()["total"]
+    curr.execute(f"SELECT COUNT(*) AS total FROM rn_licenses {where}", params)
+    total = curr.fetchone()["total"]
 
     if export:
-        cur.execute(
+        curr.execute(
             f"SELECT license_number, name, profession, address, date_of_licensure "
             f"FROM rn_licenses {where} ORDER BY {sort_by} {sort_dir}",
             params,
         )
     else:
         offset = (page - 1) * per_page
-        cur.execute(
+        curr.execute(
             f"SELECT license_number, name, profession, address, date_of_licensure "
             f"FROM rn_licenses {where} ORDER BY {sort_by} {sort_dir} LIMIT %s OFFSET %s",
             params + [per_page, offset],
         )
 
-    rows = cur.fetchall()
-    cur.close()
+    rows = curr.fetchall()
+    curr.close()
     conn.close()
 
     results = []
@@ -156,12 +199,13 @@ def licenses():
 
 
 @app.route("/api/licenses/<license_number>")
+@login_required
 def license_detail(license_number):
     conn = get_db()
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM rn_licenses WHERE license_number = %s", (license_number,))
-    row = cur.fetchone()
-    cur.close()
+    curr = conn.cursor()
+    curr.execute("SELECT * FROM rn_licenses WHERE license_number = %s", (license_number,))
+    row = curr.fetchone()
+    curr.close()
     conn.close()
     if not row:
         return jsonify({"error": "Not found"}), 404
@@ -173,6 +217,61 @@ def license_detail(license_number):
         "date_of_licensure": str(row["date_of_licensure"]) if row["date_of_licensure"] else None,
     })
 
+# create login page route and api endpoints for login/logout
+@app.route("/login")
+def login_page():
+    return send_from_directory("frontend", "login.html")
+
+@app.route("/api/login", methods=["POST"])
+def api_login():
+    data = request.get_json(silent=True) or {}
+    email = (data.get("email") or "").strip().lower()
+    password = data.get("password") or ""
+    if not email or not password:
+        return jsonify({"error": "Email and password required"}), 400
+    conn = get_db()
+    curr = conn.cursor()
+    curr.execute("SELECT id, email, password_hash FROM users WHERE email = %s", (email,))
+    row = curr.fetchone()
+    curr.close()
+    conn.close()
+    if not row or not check_password_hash(row["password_hash"], password):
+        return jsonify({"error": "Invalid email or password"}), 401
+    login_user(User(row["id"], row["email"]), remember=True)
+    return jsonify({"ok": True})
+
+@app.route("/api/register", methods=["POST"])
+def api_register():
+    data = request.get_json(silent=True) or {}
+    email = (data.get("email") or "").strip().lower()
+    password = data.get("password") or ""
+    if not email or not password:
+        return jsonify({"error": "Email and password required"}), 400
+    if len(password) < 8:
+        return jsonify({"error": "Password must be at least 8 characters"}), 400
+    conn = get_db()
+    curr = conn.cursor()
+    try:
+        curr.execute(
+            "INSERT INTO users (email, password_hash) VALUES (%s, %s)",
+            (email, generate_password_hash(password))
+        )
+        conn.commit()
+    except psycopg2.errors.UniqueViolation:
+        conn.rollback()
+        return jsonify({"error": "An account with that email already exists"}), 409
+    finally:
+        curr.close()
+        conn.close()
+    return jsonify({"ok": True})
+
+@app.route("/api/logout", methods=["POST"])
+@login_required
+def api_logout():
+    logout_user()
+    return jsonify({"ok": True})
+
 
 if __name__ == "__main__":
+    init_db()
     app.run(debug=False, port=5000)
