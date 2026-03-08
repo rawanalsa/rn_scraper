@@ -3,392 +3,743 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>NYSED RN License Explorer</title>
+  <title>NurseVerify &mdash; NY RN License Lookup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --navy: #1a3a5c;
-      --navy-dark: #122840;
-      --accent: #2e7bc4;
-      --accent-light: #e8f2fb;
-      --green: #1e7e4b;
-      --green-bg: #eaf6f0;
-      --text: #1f2937;
-      --muted: #6b7280;
-      --border: #d1d5db;
-      --bg: #f5f7fa;
-      --white: #ffffff;
-      --row-hover: #f0f6ff;
-      --shadow: 0 1px 4px rgba(0,0,0,0.08);
-      --radius: 8px;
+      --bg:           #f1f5f9;
+      --surface:      #ffffff;
+      --border:       #e2e8f0;
+      --border-focus: #3b82f6;
+
+      --navy:         #0f172a;
+      --navy-mid:     #1e293b;
+      --blue:         #2563eb;
+      --blue-hover:   #1d4ed8;
+      --blue-light:   #eff6ff;
+      --blue-muted:   #bfdbfe;
+
+      --green:        #059669;
+      --green-light:  #ecfdf5;
+      --red:          #dc2626;
+
+      --text:         #0f172a;
+      --text-2:       #334155;
+      --muted:        #64748b;
+      --muted-light:  #94a3b8;
+
+      --shadow-sm:    0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md:    0 4px 12px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.05);
+      --shadow-lg:    0 16px 40px rgba(0,0,0,0.14), 0 4px 12px rgba(0,0,0,0.08);
+
+      --radius-sm:    6px;
+      --radius:       10px;
+      --radius-lg:    14px;
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
     }
 
-    /* ── Header ── */
-    header {
-      background: linear-gradient(135deg, var(--navy-dark) 0%, var(--navy) 100%);
-      color: var(--white);
-      padding: 20px 32px;
+    /* ── Navbar ─────────────────────────────────────── */
+    nav {
+      background: var(--navy);
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    .nav-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 60px;
       display: flex;
       align-items: center;
       gap: 16px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     }
-    header .logo {
-      width: 44px; height: 44px;
-      background: var(--accent);
-      border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 22px; font-weight: 800; letter-spacing: -1px;
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
       flex-shrink: 0;
     }
-    header h1 { font-size: 1.4rem; font-weight: 700; }
-    header p  { font-size: 0.82rem; opacity: 0.75; margin-top: 2px; }
+    .nav-logo-icon {
+      width: 34px; height: 34px;
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .nav-logo-icon svg { width: 18px; height: 18px; fill: white; }
+    .nav-wordmark {
+      font-size: 1.05rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.02em;
+    }
+    .nav-wordmark span { color: #60a5fa; }
+    .nav-chip {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      background: rgba(59,130,246,0.18);
+      color: #93c5fd;
+      border: 1px solid rgba(59,130,246,0.3);
+      border-radius: 20px;
+      padding: 2px 8px;
+    }
+    .nav-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .nav-source {
+      font-size: 0.73rem;
+      color: #64748b;
+    }
+    .btn-nav-export {
+      display: flex; align-items: center; gap: 6px;
+      padding: 7px 14px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.13);
+      border-radius: var(--radius-sm);
+      color: #e2e8f0;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      font-family: inherit;
+    }
+    .btn-nav-export:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.22); }
+    .btn-nav-export svg { width: 14px; height: 14px; }
 
-    /* ── Layout ── */
-    .container { max-width: 1200px; margin: 0 auto; padding: 28px 24px; }
+    /* ── Page layout ─────────────────────────────────── */
+    main { flex: 1; }
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 32px 24px;
+    }
 
-    /* ── Stats ── */
-    .stats-row {
+    /* ── Page title ──────────────────────────────────── */
+    .page-header {
+      margin-bottom: 28px;
+    }
+    .page-header h1 {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.03em;
+    }
+    .page-header p {
+      font-size: 0.875rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    /* ── Stats cards ─────────────────────────────────── */
+    .stats-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 16px;
       margin-bottom: 24px;
     }
     .stat-card {
-      background: var(--white);
+      background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 18px 20px;
-      box-shadow: var(--shadow);
+      padding: 20px 22px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
     }
-    .stat-card .label {
-      font-size: 0.75rem;
+    .stat-icon {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .stat-icon.blue  { background: var(--blue-light); }
+    .stat-icon.green { background: var(--green-light); }
+    .stat-icon.slate { background: #f1f5f9; }
+    .stat-icon svg   { width: 20px; height: 20px; }
+    .stat-icon.blue  svg { stroke: var(--blue); }
+    .stat-icon.green svg { stroke: var(--green); }
+    .stat-icon.slate svg { stroke: var(--muted); }
+    .stat-body { min-width: 0; }
+    .stat-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--muted);
       text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--muted);
-      margin-bottom: 6px;
+      letter-spacing: 0.07em;
+      margin-bottom: 4px;
     }
-    .stat-card .value {
-      font-size: 1.75rem;
-      font-weight: 700;
-      color: var(--navy);
+    .stat-value {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.03em;
+      line-height: 1.1;
     }
-    .stat-card .sub {
-      font-size: 0.78rem;
-      color: var(--muted);
+    .stat-value.date-val {
+      font-size: 1rem;
+      letter-spacing: -0.01em;
+      padding-top: 4px;
+    }
+    .stat-sub {
+      font-size: 0.75rem;
+      color: var(--muted-light);
       margin-top: 2px;
     }
 
-    /* ── Search panel ── */
+    /* ── Search card ─────────────────────────────────── */
     .search-card {
-      background: var(--white);
+      background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 20px 24px;
-      box-shadow: var(--shadow);
+      border-radius: var(--radius-lg);
+      padding: 24px 26px;
+      box-shadow: var(--shadow-sm);
       margin-bottom: 20px;
     }
-    .search-card h2 {
-      font-size: 0.9rem;
-      font-weight: 600;
-      color: var(--navy);
-      margin-bottom: 14px;
+    .search-card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 18px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .search-card-header svg {
+      width: 16px; height: 16px;
+      stroke: var(--muted);
+    }
+    .search-card-header span {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text-2);
       text-transform: uppercase;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.07em;
     }
     .search-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 14px;
     }
     .field label {
       display: block;
-      font-size: 0.78rem;
+      font-size: 0.75rem;
       font-weight: 600;
       color: var(--muted);
-      margin-bottom: 4px;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
+      margin-bottom: 5px;
+      letter-spacing: 0.02em;
     }
-    .field input {
+    .field input,
+    .field select {
       width: 100%;
-      padding: 8px 10px;
+      padding: 9px 11px;
       border: 1px solid var(--border);
-      border-radius: 6px;
-      font-size: 0.88rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.875rem;
+      font-family: inherit;
       color: var(--text);
       background: var(--bg);
-      transition: border-color 0.15s, box-shadow 0.15s;
+      transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+      appearance: none;
+      -webkit-appearance: none;
     }
-    .field input:focus {
+    .field select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      padding-right: 30px;
+    }
+    .field input:focus,
+    .field select:focus {
       outline: none;
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(46,123,196,0.15);
-      background: var(--white);
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.14);
+      background: var(--surface);
     }
+    .field input::placeholder { color: var(--muted-light); }
+
     .search-actions {
       display: flex;
       gap: 10px;
-      margin-top: 14px;
+      margin-top: 18px;
       align-items: center;
       flex-wrap: wrap;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
     }
     .btn {
-      padding: 8px 18px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 9px 18px;
       border: none;
-      border-radius: 6px;
-      font-size: 0.87rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.86rem;
       font-weight: 600;
+      font-family: inherit;
       cursor: pointer;
-      transition: background 0.15s, transform 0.1s;
+      transition: background 0.14s, transform 0.1s, box-shadow 0.14s;
+      white-space: nowrap;
     }
+    .btn svg { width: 15px; height: 15px; flex-shrink: 0; }
     .btn:active { transform: scale(0.97); }
-    .btn-primary { background: var(--accent); color: var(--white); }
-    .btn-primary:hover { background: #2368a8; }
+
+    .btn-primary {
+      background: var(--blue);
+      color: #fff;
+      box-shadow: 0 1px 3px rgba(37,99,235,0.35);
+    }
+    .btn-primary:hover { background: var(--blue-hover); box-shadow: 0 3px 8px rgba(37,99,235,0.4); }
+
     .btn-ghost {
       background: transparent;
       color: var(--muted);
       border: 1px solid var(--border);
     }
-    .btn-ghost:hover { background: var(--bg); color: var(--text); }
-    .btn-green { background: var(--green); color: var(--white); }
-    .btn-green:hover { background: #165c37; }
+    .btn-ghost:hover { background: var(--bg); color: var(--text-2); }
 
-    /* ── Results bar ── */
+    .btn-green {
+      background: var(--green);
+      color: #fff;
+      margin-left: auto;
+      box-shadow: 0 1px 3px rgba(5,150,105,0.3);
+    }
+    .btn-green:hover { background: #047857; box-shadow: 0 3px 8px rgba(5,150,105,0.35); }
+
+    /* ── Results toolbar ─────────────────────────────── */
     .results-bar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       flex-wrap: wrap;
-      gap: 8px;
+      gap: 10px;
     }
     .results-bar .count {
-      font-size: 0.85rem;
+      font-size: 0.83rem;
       color: var(--muted);
     }
-    .results-bar .count strong { color: var(--text); }
+    .results-bar .count strong { color: var(--text-2); font-weight: 600; }
     .per-page-select {
-      display: flex; align-items: center; gap: 6px;
-      font-size: 0.82rem; color: var(--muted);
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.8rem; color: var(--muted);
     }
     .per-page-select select {
-      padding: 4px 8px;
+      padding: 5px 28px 5px 9px;
       border: 1px solid var(--border);
-      border-radius: 6px;
-      font-size: 0.82rem;
-      background: var(--white);
+      border-radius: var(--radius-sm);
+      font-size: 0.8rem;
+      font-family: inherit;
+      background: var(--surface);
+      color: var(--text);
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+      cursor: pointer;
     }
+    .per-page-select select:focus { outline: none; border-color: var(--border-focus); }
 
-    /* ── Table ── */
+    /* ── Table ───────────────────────────────────────── */
     .table-wrap {
-      background: var(--white);
+      background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
       overflow: hidden;
     }
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.87rem;
+      font-size: 0.865rem;
     }
-    thead { background: var(--navy); color: var(--white); }
+    thead { background: #f8fafc; border-bottom: 2px solid var(--border); }
     thead th {
-      padding: 12px 14px;
+      padding: 12px 16px;
       text-align: left;
-      font-size: 0.75rem;
-      font-weight: 600;
+      font-size: 0.72rem;
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.07em;
+      color: var(--muted);
       white-space: nowrap;
       user-select: none;
     }
     thead th.sortable { cursor: pointer; }
-    thead th.sortable:hover { background: rgba(255,255,255,0.12); }
-    thead th .sort-icon { margin-left: 4px; opacity: 0.6; font-size: 0.7rem; }
-    thead th.active-sort .sort-icon { opacity: 1; color: #7ec8f5; }
+    thead th.sortable:hover { color: var(--text-2); background: #f1f5f9; }
+    thead th.active-sort { color: var(--blue); background: var(--blue-light); }
+    .sort-icon { margin-left: 4px; font-size: 0.65rem; opacity: 0.5; }
+    thead th.active-sort .sort-icon { opacity: 1; }
 
     tbody tr {
-      border-bottom: 1px solid var(--border);
+      border-bottom: 1px solid #f1f5f9;
       transition: background 0.1s;
+      cursor: pointer;
     }
     tbody tr:last-child { border-bottom: none; }
-    tbody tr:hover { background: var(--row-hover); }
-    tbody td { padding: 11px 14px; vertical-align: top; }
+    tbody tr:hover { background: #f8fafc; }
+    tbody tr:hover .row-arrow { opacity: 1; }
+    tbody td { padding: 13px 16px; vertical-align: middle; color: var(--text-2); }
+    tbody td:first-child { color: var(--text); }
 
-    .badge {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 12px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      background: var(--accent-light);
-      color: var(--accent);
-    }
     .license-num {
-      font-family: monospace;
-      font-size: 0.85rem;
-      color: var(--navy);
+      font-family: "SF Mono", "Fira Code", "Cascadia Mono", monospace;
+      font-size: 0.82rem;
       font-weight: 600;
+      color: var(--blue);
+      background: var(--blue-light);
+      padding: 2px 7px;
+      border-radius: 5px;
     }
-
-    /* Empty / Loading states */
-    .state-row td {
-      text-align: center;
-      padding: 60px 20px;
-      color: var(--muted);
+    .name-cell { font-weight: 500; color: var(--text); }
+    .profession-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 9px;
+      border-radius: 20px;
+      font-size: 0.73rem;
+      font-weight: 600;
+      background: var(--green-light);
+      color: var(--green);
+      border: 1px solid #a7f3d0;
     }
-    .spinner {
+    .profession-badge::before {
+      content: "";
       display: inline-block;
-      width: 24px; height: 24px;
-      border: 3px solid var(--border);
-      border-top-color: var(--accent);
+      width: 6px; height: 6px;
+      background: var(--green);
       border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-      margin-bottom: 8px;
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    .row-arrow {
+      opacity: 0;
+      transition: opacity 0.1s;
+      color: var(--muted-light);
+      font-size: 0.9rem;
+      float: right;
+    }
 
-    /* ── Pagination ── */
+    /* Skeleton loading */
+    .skeleton-row td { padding: 14px 16px; }
+    .skel {
+      height: 14px;
+      background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+      background-size: 200% 100%;
+      border-radius: 6px;
+      animation: shimmer 1.4s infinite;
+    }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+    /* Empty / error state */
+    .state-cell {
+      text-align: center;
+      padding: 64px 20px !important;
+    }
+    .state-icon {
+      width: 48px; height: 48px;
+      margin: 0 auto 14px;
+      background: #f1f5f9;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .state-icon svg { width: 22px; height: 22px; stroke: var(--muted-light); }
+    .state-title { font-size: 0.95rem; font-weight: 600; color: var(--text-2); margin-bottom: 4px; }
+    .state-sub   { font-size: 0.82rem; color: var(--muted); }
+
+    /* ── Pagination ──────────────────────────────────── */
     .pagination {
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 4px;
-      margin-top: 20px;
+      margin-top: 24px;
       flex-wrap: wrap;
     }
     .pg-btn {
-      min-width: 34px; height: 34px;
+      min-width: 36px; height: 36px;
       padding: 0 10px;
       border: 1px solid var(--border);
-      border-radius: 6px;
-      background: var(--white);
-      color: var(--text);
-      font-size: 0.85rem;
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      color: var(--text-2);
+      font-size: 0.84rem;
+      font-family: inherit;
+      font-weight: 500;
       cursor: pointer;
-      transition: background 0.12s, border-color 0.12s;
+      transition: background 0.12s, border-color 0.12s, color 0.12s;
       display: flex; align-items: center; justify-content: center;
     }
-    .pg-btn:hover:not(:disabled) { background: var(--accent-light); border-color: var(--accent); }
-    .pg-btn.active { background: var(--accent); color: var(--white); border-color: var(--accent); font-weight: 700; }
-    .pg-btn:disabled { opacity: 0.35; cursor: default; }
-    .pg-ellipsis { color: var(--muted); padding: 0 4px; font-size: 0.9rem; }
+    .pg-btn:hover:not(:disabled) {
+      background: var(--blue-light);
+      border-color: var(--blue-muted);
+      color: var(--blue);
+    }
+    .pg-btn.active {
+      background: var(--blue);
+      color: #fff;
+      border-color: var(--blue);
+      font-weight: 700;
+      box-shadow: 0 1px 4px rgba(37,99,235,0.3);
+    }
+    .pg-btn:disabled { opacity: 0.3; cursor: default; }
+    .pg-ellipsis { color: var(--muted-light); padding: 0 4px; font-size: 0.9rem; line-height: 36px; }
 
-    /* ── Modal ── */
+    /* ── Modal ───────────────────────────────────────── */
     .modal-overlay {
       display: none;
       position: fixed; inset: 0;
-      background: rgba(0,0,0,0.45);
-      z-index: 100;
+      background: rgba(15,23,42,0.55);
+      z-index: 200;
       align-items: center;
       justify-content: center;
+      backdrop-filter: blur(2px);
     }
     .modal-overlay.open { display: flex; }
     .modal {
-      background: var(--white);
-      border-radius: 12px;
-      padding: 28px 32px;
-      max-width: 460px;
-      width: 90%;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-      position: relative;
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      max-width: 480px;
+      width: 92%;
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+      animation: modal-in 0.18s ease;
     }
-    .modal h2 {
-      font-size: 1.1rem;
-      color: var(--navy);
-      margin-bottom: 18px;
-      padding-right: 24px;
+    @keyframes modal-in {
+      from { opacity: 0; transform: scale(0.96) translateY(8px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .modal-header {
+      background: linear-gradient(135deg, var(--navy-mid), var(--navy));
+      padding: 20px 24px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .modal-header-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #64748b;
+      margin-bottom: 4px;
+    }
+    .modal-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      letter-spacing: -0.02em;
     }
     .modal-close {
-      position: absolute; top: 16px; right: 16px;
-      background: none; border: none;
-      font-size: 1.3rem; cursor: pointer; color: var(--muted);
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 6px;
+      width: 30px; height: 30px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      color: #94a3b8;
+      font-size: 1rem;
+      flex-shrink: 0;
+      transition: background 0.14s;
     }
-    .modal-close:hover { color: var(--text); }
+    .modal-close:hover { background: rgba(255,255,255,0.15); color: #f1f5f9; }
+    .modal-body { padding: 6px 0 4px; }
     .detail-row {
-      display: flex; gap: 12px;
-      padding: 10px 0;
-      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-start;
+      gap: 0;
+      padding: 12px 24px;
+      border-bottom: 1px solid #f8fafc;
     }
     .detail-row:last-child { border-bottom: none; }
     .detail-label {
-      width: 130px;
+      width: 140px;
       flex-shrink: 0;
-      font-size: 0.78rem;
+      font-size: 0.75rem;
       font-weight: 600;
       color: var(--muted);
       text-transform: uppercase;
-      letter-spacing: 0.04em;
-      padding-top: 1px;
+      letter-spacing: 0.05em;
+      padding-top: 2px;
     }
-    .detail-value { font-size: 0.9rem; color: var(--text); }
+    .detail-value { font-size: 0.9rem; color: var(--text); font-weight: 500; }
 
-    /* ── Notification toast ── */
+    /* ── Toast ───────────────────────────────────────── */
     .toast {
-      position: fixed; bottom: 24px; right: 24px;
-      background: var(--green);
-      color: var(--white);
-      padding: 10px 18px;
-      border-radius: 8px;
-      font-size: 0.87rem;
-      font-weight: 600;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--navy);
+      color: #e2e8f0;
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-size: 0.855rem;
+      font-weight: 500;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+      border: 1px solid rgba(255,255,255,0.08);
       opacity: 0;
-      transition: opacity 0.25s;
-      z-index: 200;
+      transform: translateY(12px);
+      transition: opacity 0.22s, transform 0.22s;
+      z-index: 300;
+      pointer-events: none;
     }
-    .toast.show { opacity: 1; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      flex-shrink: 0;
+    }
+    .toast.error .toast-dot { background: var(--red); }
 
-    @media (max-width: 640px) {
-      .stats-row { grid-template-columns: 1fr 1fr; }
-      .stats-row .stat-card:last-child { grid-column: span 2; }
-      header { padding: 14px 16px; }
-      .container { padding: 16px 12px; }
+    /* ── Footer ──────────────────────────────────────── */
+    footer {
+      background: var(--navy);
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding: 20px 24px;
+      margin-top: 40px;
+    }
+    .footer-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .footer-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .footer-wordmark { font-size: 0.85rem; font-weight: 700; color: #e2e8f0; }
+    .footer-wordmark span { color: #60a5fa; }
+    .footer-divider { color: #334155; font-size: 1rem; }
+    .footer-copy { font-size: 0.75rem; color: #475569; }
+    .footer-right { font-size: 0.73rem; color: #475569; text-align: right; }
+    .footer-right a { color: #60a5fa; text-decoration: none; }
+    .footer-right a:hover { text-decoration: underline; }
+
+    /* ── Responsive ──────────────────────────────────── */
+    @media (max-width: 768px) {
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+      .stats-grid .stat-card:first-child { grid-column: span 2; }
+      .search-grid { grid-template-columns: 1fr 1fr; }
+      .nav-source { display: none; }
+    }
+    @media (max-width: 540px) {
+      .stats-grid { grid-template-columns: 1fr; }
+      .stats-grid .stat-card:first-child { grid-column: span 1; }
+      .search-grid { grid-template-columns: 1fr; }
+      .container { padding: 20px 16px; }
     }
   </style>
 </head>
 <body>
 
-<header>
-  <div class="logo">RN</div>
-  <div>
-    <h1>NYSED RN License Explorer</h1>
-    <p>New York State Registered Nurse License Database &mdash; Profession Code 022</p>
+<!-- Navbar -->
+<nav>
+  <div class="nav-inner">
+    <a class="nav-logo" href="/">
+      <div class="nav-logo-icon">
+        <!-- Shield icon -->
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L3 7v5c0 5.5 3.8 10.7 9 12 5.2-1.3 9-6.5 9-12V7L12 2z"/></svg>
+      </div>
+      <div class="nav-wordmark">Nurse<span>Verify</span></div>
+    </a>
+    <div class="nav-chip">NY State</div>
+    <div class="nav-right">
+      <span class="nav-source">Source: NYSED ROSA API</span>
+      <button class="btn-nav-export" onclick="exportCSV()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Export CSV
+      </button>
+    </div>
   </div>
-</header>
+</nav>
 
+<main>
 <div class="container">
 
+  <!-- Page header -->
+  <div class="page-header">
+    <h1>RN License Lookup</h1>
+    <p>Search and verify New York State Registered Nurse licenses &mdash; Profession Code 022</p>
+  </div>
+
   <!-- Stats -->
-  <div class="stats-row">
+  <div class="stats-grid">
     <div class="stat-card">
-      <div class="label">Total Licenses</div>
-      <div class="value" id="stat-total">--</div>
-      <div class="sub">records in database</div>
+      <div class="stat-icon blue">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+        </svg>
+      </div>
+      <div class="stat-body">
+        <div class="stat-label">Total Licenses</div>
+        <div class="stat-value" id="stat-total">&mdash;</div>
+        <div class="stat-sub">records in database</div>
+      </div>
     </div>
     <div class="stat-card">
-      <div class="label">Earliest Licensed</div>
-      <div class="value" id="stat-earliest" style="font-size:1.1rem;padding-top:8px">--</div>
+      <div class="stat-icon green">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+      </div>
+      <div class="stat-body">
+        <div class="stat-label">Earliest Licensed</div>
+        <div class="stat-value date-val" id="stat-earliest">&mdash;</div>
+      </div>
     </div>
     <div class="stat-card">
-      <div class="label">Most Recent</div>
-      <div class="value" id="stat-latest" style="font-size:1.1rem;padding-top:8px">--</div>
+      <div class="stat-icon slate">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+      </div>
+      <div class="stat-body">
+        <div class="stat-label">Most Recently Licensed</div>
+        <div class="stat-value date-val" id="stat-latest">&mdash;</div>
+      </div>
     </div>
   </div>
 
-  <!-- Search -->
+  <!-- Search card -->
   <div class="search-card">
-    <h2>Search &amp; Filter</h2>
+    <div class="search-card-header">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+      </svg>
+      <span>Filters</span>
+    </div>
     <div class="search-grid">
       <div class="field">
         <label>Match Type</label>
@@ -401,15 +752,15 @@
       </div>
       <div class="field">
         <label>Name</label>
-        <input id="f-name" type="text" placeholder="e.g. Smith" />
+        <input id="f-name" type="text" placeholder="e.g. Smith" autocomplete="off" />
       </div>
       <div class="field">
         <label>License #</label>
-        <input id="f-license" type="text" placeholder="e.g. 123456" />
+        <input id="f-license" type="text" placeholder="e.g. 123456" autocomplete="off" />
       </div>
       <div class="field">
         <label>Address / State</label>
-        <input id="f-address" type="text" placeholder="e.g. Brooklyn, NY" />
+        <input id="f-address" type="text" placeholder="e.g. Brooklyn, NY" autocomplete="off" />
       </div>
       <div class="field">
         <label>Licensed After</label>
@@ -421,13 +772,23 @@
       </div>
     </div>
     <div class="search-actions">
-      <button class="btn btn-primary" onclick="search()">Search</button>
-      <button class="btn btn-ghost" onclick="clearFilters()">Clear</button>
-      <button class="btn btn-green" onclick="exportCSV()" style="margin-left:auto">Export CSV</button>
+      <button class="btn btn-primary" onclick="search()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        Search
+      </button>
+      <button class="btn btn-ghost" onclick="clearFilters()">Clear Filters</button>
+      <button class="btn btn-green" onclick="exportCSV()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Export CSV
+      </button>
     </div>
   </div>
 
-  <!-- Results bar -->
+  <!-- Results toolbar -->
   <div class="results-bar">
     <div class="count" id="results-count">Loading&hellip;</div>
     <div class="per-page-select">
@@ -464,9 +825,12 @@
         </tr>
       </thead>
       <tbody id="table-body">
-        <tr class="state-row"><td colspan="5">
-          <div class="spinner"></div><br>Loading&hellip;
-        </td></tr>
+        <!-- skeleton -->
+        <tr class="skeleton-row"><td><div class="skel" style="width:80px"></div></td><td><div class="skel" style="width:150px"></div></td><td><div class="skel" style="width:110px"></div></td><td><div class="skel" style="width:180px"></div></td><td><div class="skel" style="width:90px"></div></td></tr>
+        <tr class="skeleton-row"><td><div class="skel" style="width:80px"></div></td><td><div class="skel" style="width:130px"></div></td><td><div class="skel" style="width:110px"></div></td><td><div class="skel" style="width:160px"></div></td><td><div class="skel" style="width:90px"></div></td></tr>
+        <tr class="skeleton-row"><td><div class="skel" style="width:80px"></div></td><td><div class="skel" style="width:170px"></div></td><td><div class="skel" style="width:110px"></div></td><td><div class="skel" style="width:200px"></div></td><td><div class="skel" style="width:90px"></div></td></tr>
+        <tr class="skeleton-row"><td><div class="skel" style="width:80px"></div></td><td><div class="skel" style="width:120px"></div></td><td><div class="skel" style="width:110px"></div></td><td><div class="skel" style="width:140px"></div></td><td><div class="skel" style="width:90px"></div></td></tr>
+        <tr class="skeleton-row"><td><div class="skel" style="width:80px"></div></td><td><div class="skel" style="width:155px"></div></td><td><div class="skel" style="width:110px"></div></td><td><div class="skel" style="width:170px"></div></td><td><div class="skel" style="width:90px"></div></td></tr>
       </tbody>
     </table>
   </div>
@@ -475,18 +839,41 @@
   <div class="pagination" id="pagination"></div>
 
 </div>
+</main>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-left">
+      <div class="footer-wordmark">Nurse<span>Verify</span></div>
+      <div class="footer-divider">&mdash;</div>
+      <div class="footer-copy">New York State RN License Database</div>
+    </div>
+    <div class="footer-right">
+      Data sourced from the <a href="#" onclick="return false">NYSED ROSA API</a> &bull; Profession Code 022
+    </div>
+  </div>
+</footer>
 
 <!-- Detail Modal -->
 <div class="modal-overlay" id="modal" onclick="closeModal(event)">
   <div class="modal">
-    <button class="modal-close" onclick="closeModal()">&times;</button>
-    <h2 id="modal-title">License Detail</h2>
-    <div id="modal-body"></div>
+    <div class="modal-header">
+      <div class="modal-header-info">
+        <div class="modal-header-label">License Record</div>
+        <div class="modal-title" id="modal-title">—</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
   </div>
 </div>
 
 <!-- Toast -->
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast">
+  <div class="toast-dot"></div>
+  <span id="toast-msg"></span>
+</div>
 
 <script>
   let currentPage = 1;
@@ -498,8 +885,6 @@
   window.addEventListener("DOMContentLoaded", () => {
     loadStats();
     fetchLicenses();
-
-    // Allow pressing Enter in any filter input to trigger search
     document.querySelectorAll(".field input").forEach(el => {
       el.addEventListener("keydown", e => { if (e.key === "Enter") search(); });
     });
@@ -510,17 +895,28 @@
     try {
       const res = await fetch("/api/stats");
       const d = await res.json();
-      document.getElementById("stat-total").textContent = d.total.toLocaleString();
+      animateNumber("stat-total", d.total);
       document.getElementById("stat-earliest").textContent = formatDate(d.earliest) || "N/A";
       document.getElementById("stat-latest").textContent   = formatDate(d.latest)   || "N/A";
     } catch { /* silently ignore */ }
   }
 
-  // ── Search / filter ───────────────────────────────────
-  function search() {
-    currentPage = 1;
-    fetchLicenses();
+  function animateNumber(id, target) {
+    const el = document.getElementById(id);
+    const duration = 900;
+    const start = performance.now();
+    function update(now) {
+      const t = Math.min((now - start) / duration, 1);
+      const ease = 1 - Math.pow(1 - t, 3);
+      el.textContent = Math.floor(ease * target).toLocaleString();
+      if (t < 1) requestAnimationFrame(update);
+      else el.textContent = target.toLocaleString();
+    }
+    requestAnimationFrame(update);
   }
+
+  // ── Search / filter ───────────────────────────────────
+  function search() { currentPage = 1; fetchLicenses(); }
 
   function clearFilters() {
     ["f-name","f-license","f-address","f-date-from","f-date-to"].forEach(id => {
@@ -568,10 +964,8 @@
   async function fetchLicenses() {
     const perPage = document.getElementById("per-page").value;
     const params  = buildParams(currentPage, perPage, false);
-
     setTableLoading();
     updateSortHeaders();
-
     try {
       const res  = await fetch("/api/licenses?" + params);
       const data = await res.json();
@@ -579,37 +973,56 @@
       renderTable(data.results);
       renderCount(data.total, data.page, data.per_page);
       renderPagination(data.page, totalPages);
-    } catch (err) {
-      showTableError("Failed to load data. Is the Flask server running?");
+    } catch {
+      showTableError("Could not connect to the server. Make sure Flask is running.");
     }
   }
 
   function setTableLoading() {
-    document.getElementById("table-body").innerHTML =
-      `<tr class="state-row"><td colspan="5"><div class="spinner"></div><br>Loading&hellip;</td></tr>`;
+    const skels = Array.from({length: 6}, () =>
+      `<tr class="skeleton-row">
+        <td><div class="skel" style="width:${70+Math.random()*20|0}px"></div></td>
+        <td><div class="skel" style="width:${120+Math.random()*80|0}px"></div></td>
+        <td><div class="skel" style="width:110px"></div></td>
+        <td><div class="skel" style="width:${140+Math.random()*80|0}px"></div></td>
+        <td><div class="skel" style="width:90px"></div></td>
+      </tr>`
+    ).join("");
+    document.getElementById("table-body").innerHTML = skels;
     document.getElementById("results-count").textContent = "Loading\u2026";
     document.getElementById("pagination").innerHTML = "";
   }
 
   function showTableError(msg) {
-    document.getElementById("table-body").innerHTML =
-      `<tr class="state-row"><td colspan="5" style="color:#c0392b">${msg}</td></tr>`;
+    document.getElementById("table-body").innerHTML = `
+      <tr><td colspan="5" class="state-cell">
+        <div class="state-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+        <div class="state-title">Something went wrong</div>
+        <div class="state-sub">${msg}</div>
+      </td></tr>`;
     document.getElementById("results-count").textContent = "";
   }
 
   function renderTable(rows) {
     const tbody = document.getElementById("table-body");
     if (!rows || rows.length === 0) {
-      tbody.innerHTML = `<tr class="state-row"><td colspan="5">No records found.</td></tr>`;
+      tbody.innerHTML = `
+        <tr><td colspan="5" class="state-cell">
+          <div class="state-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+          <div class="state-title">No records found</div>
+          <div class="state-sub">Try adjusting your search filters</div>
+        </td></tr>`;
       return;
     }
     tbody.innerHTML = rows.map(r => `
-      <tr style="cursor:pointer" onclick='openModal(${JSON.stringify(r)})'>
+      <tr onclick='openModal(${JSON.stringify(r)})'>
         <td><span class="license-num">${esc(r.license_number)}</span></td>
-        <td>${esc(r.name || "—")}</td>
-        <td>${r.profession ? `<span class="badge">${esc(r.profession)}</span>` : "—"}</td>
+        <td><span class="name-cell">${esc(r.name || "—")}</span></td>
+        <td>${r.profession
+          ? `<span class="profession-badge">${esc(r.profession)}</span>`
+          : `<span style="color:var(--muted-light)">—</span>`}</td>
         <td>${esc(r.address || "—")}</td>
-        <td>${formatDate(r.date_of_licensure) || "—"}</td>
+        <td>${formatDate(r.date_of_licensure) || `<span style="color:var(--muted-light)">—</span>`}</td>
       </tr>
     `).join("");
   }
@@ -617,37 +1030,29 @@
   function renderCount(total, page, perPage) {
     const start = (page - 1) * perPage + 1;
     const end   = Math.min(page * perPage, total);
-    const el = document.getElementById("results-count");
-    if (total === 0) {
-      el.innerHTML = "No results found";
-    } else {
-      el.innerHTML = `Showing <strong>${start}–${end}</strong> of <strong>${total.toLocaleString()}</strong> licenses`;
-    }
+    const el    = document.getElementById("results-count");
+    el.innerHTML = total === 0
+      ? "No results found"
+      : `Showing <strong>${start.toLocaleString()}–${end.toLocaleString()}</strong> of <strong>${total.toLocaleString()}</strong> licenses`;
   }
 
   function renderPagination(page, pages) {
-    const container = document.getElementById("pagination");
-    if (pages <= 1) { container.innerHTML = ""; return; }
-
+    const c = document.getElementById("pagination");
+    if (pages <= 1) { c.innerHTML = ""; return; }
     const nums = getPageNums(page, pages);
     let html = `<button class="pg-btn" onclick="goPage(${page-1})" ${page<=1?"disabled":""}>&#8249;</button>`;
-
     for (const n of nums) {
-      if (n === "…") {
-        html += `<span class="pg-ellipsis">…</span>`;
-      } else {
-        html += `<button class="pg-btn${n===page?" active":""}" onclick="goPage(${n})">${n}</button>`;
-      }
+      if (n === "…") html += `<span class="pg-ellipsis">…</span>`;
+      else html += `<button class="pg-btn${n===page?" active":""}" onclick="goPage(${n})">${n}</button>`;
     }
-
     html += `<button class="pg-btn" onclick="goPage(${page+1})" ${page>=pages?"disabled":""}>&#8250;</button>`;
-    container.innerHTML = html;
+    c.innerHTML = html;
   }
 
   function getPageNums(page, pages) {
     if (pages <= 7) return Array.from({length: pages}, (_, i) => i + 1);
     const nums = new Set([1, pages, page, page-1, page+1].filter(n => n >= 1 && n <= pages));
-    const sorted = [...nums].sort((a,b)=>a-b);
+    const sorted = [...nums].sort((a,b) => a-b);
     const result = [];
     for (let i = 0; i < sorted.length; i++) {
       if (i > 0 && sorted[i] - sorted[i-1] > 1) result.push("…");
@@ -663,17 +1068,12 @@
     window.scrollTo({top: 0, behavior: "smooth"});
   }
 
-  // ── Sort header UI ────────────────────────────────────
   function updateSortHeaders() {
     document.querySelectorAll("thead th.sortable").forEach(th => {
       const col = th.dataset.col;
       th.classList.toggle("active-sort", col === currentSort);
       const icon = th.querySelector(".sort-icon");
-      if (col === currentSort) {
-        icon.textContent = currentDir === "asc" ? "▲" : "▼";
-      } else {
-        icon.innerHTML = "&#8597;";
-      }
+      icon.textContent = col === currentSort ? (currentDir === "asc" ? "▲" : "▼") : "⇅";
     });
   }
 
@@ -681,53 +1081,43 @@
   async function exportCSV() {
     const perPage = document.getElementById("per-page").value;
     const params  = buildParams(1, perPage, true);
-
-    showToast("Preparing CSV export…");
-
+    showToast("Preparing export…");
     try {
       const res  = await fetch("/api/licenses?" + params);
       const data = await res.json();
       const rows = data.results;
-
-      if (!rows || rows.length === 0) {
-        showToast("No data to export.", 3000, "#c0392b");
-        return;
-      }
-
-      const cols = ["license_number","name","profession","address","date_of_licensure"];
+      if (!rows || rows.length === 0) { showToast("No data to export.", 3000, true); return; }
+      const cols   = ["license_number","name","profession","address","date_of_licensure"];
       const header = cols.join(",");
-      const lines  = rows.map(r =>
-        cols.map(c => `"${(r[c] || "").toString().replace(/"/g, '""')}"`).join(",")
-      );
-      const csv  = [header, ...lines].join("\n");
-      const blob = new Blob([csv], {type: "text/csv"});
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement("a");
-      a.href     = url;
-      a.download = `rn_licenses_export_${new Date().toISOString().slice(0,10)}.csv`;
+      const lines  = rows.map(r => cols.map(c => `"${(r[c]||"").toString().replace(/"/g,'""')}"`).join(","));
+      const csv    = [header, ...lines].join("\n");
+      const url    = URL.createObjectURL(new Blob([csv], {type:"text/csv"}));
+      const a      = Object.assign(document.createElement("a"), {href: url, download: `rn_licenses_${new Date().toISOString().slice(0,10)}.csv`});
       a.click();
       URL.revokeObjectURL(url);
-      showToast(`Exported ${rows.length.toLocaleString()} records.`);
+      showToast(`Exported ${rows.length.toLocaleString()} records`);
     } catch {
-      showToast("Export failed.", 3000, "#c0392b");
+      showToast("Export failed.", 3000, true);
     }
   }
 
   // ── Modal ─────────────────────────────────────────────
   function openModal(r) {
-    document.getElementById("modal-title").textContent = r.name || "License Detail";
+    document.getElementById("modal-title").textContent = r.name || "License Record";
     document.getElementById("modal-body").innerHTML = `
       <div class="detail-row">
         <div class="detail-label">License #</div>
         <div class="detail-value"><span class="license-num">${esc(r.license_number)}</span></div>
       </div>
       <div class="detail-row">
-        <div class="detail-label">Name</div>
+        <div class="detail-label">Full Name</div>
         <div class="detail-value">${esc(r.name || "—")}</div>
       </div>
       <div class="detail-row">
         <div class="detail-label">Profession</div>
-        <div class="detail-value">${r.profession ? `<span class="badge">${esc(r.profession)}</span>` : "—"}</div>
+        <div class="detail-value">${r.profession
+          ? `<span class="profession-badge">${esc(r.profession)}</span>`
+          : "—"}</div>
       </div>
       <div class="detail-row">
         <div class="detail-label">Address</div>
@@ -742,17 +1132,21 @@
   }
 
   function closeModal(e) {
-    if (!e || e.target === document.getElementById("modal") || e.type === "click" && !e.target.closest(".modal")) {
+    if (!e || e.target === document.getElementById("modal")) {
       document.getElementById("modal").classList.remove("open");
     }
   }
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape") document.getElementById("modal").classList.remove("open");
+  });
 
   // ── Toast ─────────────────────────────────────────────
   let toastTimer;
-  function showToast(msg, duration = 3000, bg) {
-    const t = document.getElementById("toast");
-    t.textContent = msg;
-    if (bg) t.style.background = bg; else t.style.background = "";
+  function showToast(msg, duration = 3000, isError = false) {
+    const t  = document.getElementById("toast");
+    const tm = document.getElementById("toast-msg");
+    tm.textContent = msg;
+    t.classList.toggle("error", isError);
     t.classList.add("show");
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => t.classList.remove("show"), duration);
