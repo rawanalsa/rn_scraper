@@ -6,6 +6,8 @@ import random
 from requests.exceptions import Timeout, ConnectionError, HTTPError, RequestException
 from dotenv import load_dotenv
 from datetime import datetime
+
+import app
 load_dotenv()
 
 BASE_URL = "https://api.nysed.gov/rosa/V2"
@@ -247,7 +249,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    port = int(os.getenv("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
 
     
     
