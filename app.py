@@ -314,4 +314,4 @@ def api_logout():
 if __name__ == "__main__":
     init_db()
     port = int(os.getenv("PORT", "5000"))
-    app.run(debug=False, port=port)
+    app.run(host="0.0.0.0", debug=False, port=port)

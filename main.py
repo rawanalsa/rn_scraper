@@ -7,7 +7,6 @@ from requests.exceptions import Timeout, ConnectionError, HTTPError, RequestExce
 from dotenv import load_dotenv
 from datetime import datetime
 
-import app
 load_dotenv()
 
 BASE_URL = "https://api.nysed.gov/rosa/V2"
