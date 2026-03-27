@@ -29,19 +29,29 @@ def get_db():
     )
 
 def init_db():
-    conn = get_db()
-    curr = conn.cursor()
-    curr.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id SERIAL PRIMARY KEY,
-            email TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT NOW()
-        );
-    """)
-    conn.commit()
-    curr.close()
-    conn.close()
+    conn = None
+    curr = None
+    try:
+        conn = get_db()
+        curr = conn.cursor()
+        curr.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                email TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT NOW()
+            );
+        """)
+        conn.commit()
+        return True
+    except psycopg2.OperationalError as exc:
+        print(f"Warning: Could not initialize database at startup: {exc}")
+        return False
+    finally:
+        if curr:
+            curr.close()
+        if conn:
+            conn.close()
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -54,15 +64,30 @@ class User(UserMixin):  # tracks who is logged in during a session
 
 @login_manager.user_loader
 def load_user(user_id):
-    conn = get_db()
-    curr = conn.cursor()
-    curr.execute("SELECT id, email FROM users WHERE id = %s", (user_id,))
-    row = curr.fetchone()
-    curr.close()
-    conn.close()
+    conn = None
+    curr = None
+    try:
+        conn = get_db()
+        curr = conn.cursor()
+        curr.execute("SELECT id, email FROM users WHERE id = %s", (user_id,))
+        row = curr.fetchone()
+    except psycopg2.OperationalError:
+        return None
+    finally:
+        if curr:
+            curr.close()
+        if conn:
+            conn.close()
     if row:
         return User(row["id"], row["email"])
     return None
+
+
+@app.errorhandler(psycopg2.OperationalError)
+def handle_db_operational_error(_exc):
+    if request.path.startswith("/api/"):
+        return jsonify({"error": "Database unavailable. Check DATABASE_URL (or DB_HOST/DB_PORT) and try again."}), 503
+    return "Database unavailable. Please start PostgreSQL or update your DB connection settings.", 503
 
 
 @app.route("/")
@@ -229,12 +254,20 @@ def api_login():
     password = data.get("password") or ""
     if not email or not password:
         return jsonify({"error": "Email and password required"}), 400
-    conn = get_db()
-    curr = conn.cursor()
-    curr.execute("SELECT id, email, password_hash FROM users WHERE email = %s", (email,))
-    row = curr.fetchone()
-    curr.close()
-    conn.close()
+    conn = None
+    curr = None
+    try:
+        conn = get_db()
+        curr = conn.cursor()
+        curr.execute("SELECT id, email, password_hash FROM users WHERE email = %s", (email,))
+        row = curr.fetchone()
+    except psycopg2.OperationalError:
+        return jsonify({"error": "Database unavailable. Check DATABASE_URL (or DB_HOST/DB_PORT) and try again."}), 503
+    finally:
+        if curr:
+            curr.close()
+        if conn:
+            conn.close()
     if not row or not check_password_hash(row["password_hash"], password):
         return jsonify({"error": "Invalid email or password"}), 401
     login_user(User(row["id"], row["email"]), remember=True)
@@ -249,20 +282,26 @@ def api_register():
         return jsonify({"error": "Email and password required"}), 400
     if len(password) < 8:
         return jsonify({"error": "Password must be at least 8 characters"}), 400
-    conn = get_db()
-    curr = conn.cursor()
+    conn = None
+    curr = None
     try:
+        conn = get_db()
+        curr = conn.cursor()
         curr.execute(
             "INSERT INTO users (email, password_hash) VALUES (%s, %s)",
             (email, generate_password_hash(password))
         )
         conn.commit()
+    except psycopg2.OperationalError:
+        return jsonify({"error": "Database unavailable. Check DATABASE_URL (or DB_HOST/DB_PORT) and try again."}), 503
     except psycopg2.errors.UniqueViolation:
         conn.rollback()
         return jsonify({"error": "An account with that email already exists"}), 409
     finally:
-        curr.close()
-        conn.close()
+        if curr:
+            curr.close()
+        if conn:
+            conn.close()
     return jsonify({"ok": True})
 
 @app.route("/api/logout", methods=["POST"])
@@ -274,4 +313,5 @@ def api_logout():
 
 if __name__ == "__main__":
     init_db()
-    app.run(debug=False, port=5000)
+    port = int(os.getenv("PORT", "5000"))
+    app.run(debug=False, port=port)
